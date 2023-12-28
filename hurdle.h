@@ -22,5 +22,6 @@ void HURDLE_set_key_fw(uint8_t *k, HURDLE_CTX *lpContextOut);
 void HURDLE_f(uint8_t abMixState[4], const uint8_t abRhs[4], const uint8_t *bpRoundKey);
 
 extern const uint8_t g_abHurdleSbox[256];
+extern const uint8_t g_abHurdleInvSbox[256];
 
 #endif /* HAVE_HURDLE_H */

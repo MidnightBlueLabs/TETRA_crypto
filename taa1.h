@@ -27,11 +27,20 @@ void ta31(uint8_t *lpUnsealedCck, uint8_t *lpCckId, uint8_t *lpDck, uint8_t *lpS
 void ta32(uint8_t *lpSealedCck, uint8_t *lpCckId, uint8_t *lpDck, uint8_t *lpUnsealedCckOut, uint8_t *lpMfOut);
 void ta51(uint8_t *lpUnsealed, uint8_t *lpVn, uint8_t *lpKey, uint8_t *lpKeyN, uint8_t *lpSealedOut);
 void ta52(uint8_t *lpSealed, uint8_t *lpKey, uint8_t *lpVn, uint8_t *lpUnsealedOut, uint8_t *lpMfOut, uint8_t *lpKeyNOut);
+void ta61(const uint8_t *lpKey, const uint8_t *lpIdentity, uint8_t *lpEncIdentityOut);
+void ta61_inv(uint8_t *lpKey, uint8_t *lpIdentity, uint8_t *lpDecIdentityOut);
 void ta71(uint8_t *lpGck, uint8_t *lpCck, uint8_t *lpMgckOut);
 void ta81(uint8_t *lpUnsealedGck, uint8_t *lpGckVn, uint8_t *lpGckN, uint8_t *lpKey, uint8_t *lpSealedGckOut);
 void ta82(uint8_t *lpSealedGck, uint8_t *lpGckVn, uint8_t *lpKey, uint8_t *lpUnsealedGckOut, uint8_t *lpMfOut, uint8_t *lpGckNOut);
 void ta91(uint8_t *lpUnsealedGsko, uint8_t *lpGskoVn, uint8_t *lpKey, uint8_t *lpSealedGskoOut);
 void ta92(uint8_t *lpSealedGsko, uint8_t *lpGskoVn, uint8_t *lpKey, uint8_t *lpUnsealedGskoOut, uint8_t *lpMfOut);
+
+/*
+ * TA61 internals for use in cryptanalytical contexts
+ */
+void ta61_compute_c(const uint8_t *lpKey, uint8_t *lpIntermediateKeyOut);
+void ta61_inner(const uint8_t *lpIntermediateKey, const uint8_t *lpIdentity, uint8_t *lpEncIdentityOut);
+void ta61_inner_inv(uint8_t *lpIntermediateKey, uint8_t *lpIdentity, uint8_t *lpDecIdentityOut);
 
 /*
  * TBxx non-cryptographic primitives also used for authentication and key derivation

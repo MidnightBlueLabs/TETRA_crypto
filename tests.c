@@ -354,6 +354,21 @@ void test_ta51() {
     );
 }
 
+void test_ta61() {
+    TEST_VECTORS_INVERTIBLE("ta61","ta61_inv",abEncryptedIdentity,abIdentity,
+        uint8_t abKey[10];
+        uint8_t abIdentity[3];
+        uint8_t abEncryptedIdentity[3];,
+        ta61(    astVectors[i].abKey, astVectors[i].abIdentity, astVectors[i].abComputed);,
+        ta61_inv(astVectors[i].abKey, astVectors[i].abEncryptedIdentity, astVectors[i].abComputed);, {
+            { { 0xc6,0x2e,0x22,0x85,0x03,0x40,0xbc,0xeb,0x55,0x52 }, { 0x56,0x5a,0x72 }, { 0xC4,0x48,0x53 } },
+            { { 0x77,0xe7,0x9f,0xee,0x7f,0xc6,0x54,0xdc,0x65,0x44 }, { 0x00,0x00,0x00 }, { 0x01,0x98,0x87 } },
+            { { 0x4e,0xbb,0x68,0x9d,0x87,0x4a,0xd6,0x41,0x79,0x05 }, { 0x93,0x5e,0x49 }, { 0xEF,0x70,0xE4 } },
+            { { 0x67,0xfb,0x13,0x4d,0xd7,0x9c,0x7d,0x77,0xf5,0x2a }, { 0xb8,0x24,0xff }, { 0xE6,0x9A,0xD6 } }
+        }
+    );
+}
+
 void test_ta71() {
     TEST_VECTORS_2_ARGUMENTS("ta71", 10, 10, 10, ta71, {
             {
@@ -441,6 +456,18 @@ void test_ta91() {
     );
 }
 
+void test_transform_identity() {
+    TEST_VECTORS_SETUP("transform_identity", 3,
+        uint8_t abInput0[3];,
+        transform_identity(astVectors[i].abInput0, astVectors[i].abComputed), {
+            { { 0xE7,0x00,0xEE }, { 0xF0,0x3B,0xD3 } },
+            { { 0x2E,0x22,0x00 }, { 0xC6,0x22,0x3E } },
+            { { 0xBB,0x68,0x9D }, { 0x0D,0x1E,0x16 } },
+            { { 0xFB,0x13,0x4D }, { 0x85,0xFE,0xA3 } }
+        }
+    );
+}
+
 typedef struct {
     uint8_t abPlaintext[8];
     uint8_t abKey[16];
@@ -512,11 +539,13 @@ int main() {
     test_transform_80_to_128();
     test_transform_120_to_88();
     test_transform_80_to_128_alt();
+    test_transform_identity();
     
     test_ta11_ta41();
     test_ta21();
     test_ta31();
     test_ta51();
+    test_ta61();
     test_ta71();
     test_ta81();
     test_ta91();

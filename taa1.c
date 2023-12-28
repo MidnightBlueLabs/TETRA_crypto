@@ -112,6 +112,28 @@ void transform_120_to_80_alt(const uint8_t *lpBuffer, uint8_t *lpBufferOut) {
     lpBufferOut[9] = lpBuffer[13];
 }
 
+void transform_identity(const uint8_t *lpInput, uint8_t *lpOutput) {
+    uint8_t abSboxIndexes[3];
+    
+    abSboxIndexes[0] = ((lpInput[1] + lpInput[0]) << 1) - lpInput[2];
+    abSboxIndexes[1] = ((lpInput[2] + lpInput[0]) << 1) - lpInput[1];
+    abSboxIndexes[2] = ((lpInput[2] + lpInput[1]) << 1) - lpInput[0];
+
+    lpOutput[0] = g_abHurdleSbox[abSboxIndexes[0]];
+    lpOutput[1] = g_abHurdleSbox[abSboxIndexes[1]];
+    lpOutput[2] = g_abHurdleSbox[abSboxIndexes[2]];
+}
+
+void transform_identity_inverse(const uint8_t *lpInput, uint8_t *lpOutput) {   
+    uint8_t x = g_abHurdleInvSbox[lpInput[0]];
+    uint8_t y = g_abHurdleInvSbox[lpInput[1]];
+    uint8_t z = g_abHurdleInvSbox[lpInput[2]];
+
+    lpOutput[0] = (114*x + 114*y -  57*z);
+    lpOutput[1] = (114*x -  57*y + 114*z);
+    lpOutput[2] = (-57*x + 114*y + 114*z); 
+}
+
 void ta11_ta41(uint8_t *lpKeyK, uint8_t *lpChallengeRs, uint8_t *lpKsOut) {
     uint8_t abChallengeExpanded[16];
     transform_80_to_128_alt(lpChallengeRs, abChallengeExpanded);
@@ -241,6 +263,100 @@ void ta52(uint8_t *lpSealed, uint8_t *lpKey, uint8_t *lpVn, uint8_t *lpUnsealedO
         ((abUnsealedPadded[ 7] ^ abUnsealedPadded[ 8] ^ abUnsealedPadded[ 9]) != abUnsealedPadded[10]) ||
         ((abUnsealedPadded[11] ^ abUnsealedPadded[12] ^ abUnsealedPadded[13]) != abUnsealedPadded[14]) ||
         abUnsealed[10] & 0xe0;
+}
+
+void ta61_compute_c(const uint8_t *lpKey, uint8_t *lpIntermediateKeyOut) {
+    HURDLE_CTX stCipher;
+    uint8_t abKeyExpanded[16];
+
+    transform_80_to_128(lpKey, abKeyExpanded);
+    
+    HURDLE_set_key(abKeyExpanded, &stCipher);
+
+    uint8_t abPlaintext[8];
+    abPlaintext[0] = lpKey[0] ^ lpKey[2];
+    abPlaintext[1] = lpKey[1] ^ lpKey[3];
+    abPlaintext[2] = lpKey[2] ^ lpKey[4];
+    abPlaintext[3] = lpKey[3] ^ lpKey[5];
+    abPlaintext[4] = lpKey[4] ^ lpKey[6];
+    abPlaintext[5] = lpKey[5] ^ lpKey[7];
+    abPlaintext[6] = lpKey[6] ^ lpKey[8];
+    abPlaintext[7] = lpKey[7] ^ lpKey[9];
+
+    HURDLE_encrypt(
+        lpIntermediateKeyOut,
+        abPlaintext,
+        &stCipher,
+        HURDLE_ENCRYPT
+    );
+}
+
+void ta61(const uint8_t *lpKey, const uint8_t *lpIdentity, uint8_t *lpEncIdentityOut) {
+
+    uint8_t abIntermediateKey[8];
+    ta61_compute_c(lpKey, abIntermediateKey);
+    ta61_inner(abIntermediateKey, lpIdentity, lpEncIdentityOut);
+}
+
+void ta61_inner(const uint8_t *lpIntermediateKey, const uint8_t *lpIdentity, uint8_t *lpEncIdentityOut) {
+    uint8_t abIdentity[3];
+    abIdentity[0] = lpIdentity[0];
+    abIdentity[1] = lpIdentity[1];
+    abIdentity[2] = lpIdentity[2];
+
+    abIdentity[0] ^= lpIntermediateKey[0];
+    abIdentity[1] ^= lpIntermediateKey[3];
+    abIdentity[2] ^= lpIntermediateKey[6];
+
+    transform_identity(abIdentity, abIdentity);
+
+    abIdentity[0] ^= lpIntermediateKey[1];
+    abIdentity[1] ^= lpIntermediateKey[4];
+    abIdentity[2] ^= lpIntermediateKey[7];
+    
+    transform_identity(abIdentity, abIdentity);
+
+    abIdentity[0] ^= lpIntermediateKey[2];
+    abIdentity[1] ^= lpIntermediateKey[5];
+    abIdentity[2] ^= lpIntermediateKey[0];
+
+    lpEncIdentityOut[0] = abIdentity[0];
+    lpEncIdentityOut[1] = abIdentity[1];
+    lpEncIdentityOut[2] = abIdentity[2];
+}
+
+void ta61_inv(uint8_t *lpKey, uint8_t *lpIdentity, uint8_t *lpDecIdentityOut) {
+
+    uint8_t abIntermediateKey[8];
+    ta61_compute_c(lpKey, abIntermediateKey);
+    ta61_inner_inv(abIntermediateKey, lpIdentity, lpDecIdentityOut);
+}
+
+void ta61_inner_inv(uint8_t *lpIntermediateKey, uint8_t *lpIdentity, uint8_t *lpDecIdentityOut) {
+    uint8_t abIdentity[3];
+    abIdentity[0] = lpIdentity[0];
+    abIdentity[1] = lpIdentity[1];
+    abIdentity[2] = lpIdentity[2];
+
+    abIdentity[0] ^= lpIntermediateKey[2];
+    abIdentity[1] ^= lpIntermediateKey[5];
+    abIdentity[2] ^= lpIntermediateKey[0];
+
+    transform_identity_inverse(abIdentity, abIdentity);
+
+    abIdentity[0] ^= lpIntermediateKey[1];
+    abIdentity[1] ^= lpIntermediateKey[4];
+    abIdentity[2] ^= lpIntermediateKey[7];
+    
+    transform_identity_inverse(abIdentity, abIdentity);
+
+    abIdentity[0] ^= lpIntermediateKey[0];
+    abIdentity[1] ^= lpIntermediateKey[3];
+    abIdentity[2] ^= lpIntermediateKey[6];    
+
+    lpDecIdentityOut[0] = abIdentity[0];
+    lpDecIdentityOut[1] = abIdentity[1];
+    lpDecIdentityOut[2] = abIdentity[2];
 }
 
 void ta71(uint8_t *lpGck, uint8_t *lpCck, uint8_t *lpMgckOut) {
